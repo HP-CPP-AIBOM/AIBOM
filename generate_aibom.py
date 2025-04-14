@@ -120,6 +120,39 @@ def generate_vulnerability_report(input_folder, reports_folder):
         print("Return code:", e.returncode)
         return None
 
+def load_vulnerabilities(file_path):
+    with open(file_path) as f:
+        data = json.load(f)
+    vulnerabilities = set()
+    full_vulns = {}
+
+    for result in data.get("Results", []):
+        for vuln in result.get("Vulnerabilities", []):
+            vid = vuln["VulnerabilityID"]
+            vulnerabilities.add(vid)
+            if vid not in full_vulns:
+                full_vulns[vid] = vuln  # Save full vuln object
+
+    return vulnerabilities, full_vulns
+
+def compare_and_combine(file1, file2, output_file):
+    vulns1, full_data1 = load_vulnerabilities(file1)
+    vulns2, full_data2 = load_vulnerabilities(file2)
+
+    if vulns1 == vulns2:
+        print("✅ Both reports contain the same vulnerabilities.")
+        combined = list(full_data1.values())  # No need to merge
+    else:
+        print("❗ Reports are different. Creating a combined output...")
+        # Merge both dictionaries
+        combined_dict = {**full_data1, **full_data2}
+        combined = list(combined_dict.values())
+
+        # Write to output JSON file
+        with open(output_file, "w") as f:
+            json.dump(combined, f, indent=2)
+        print(f"✅ Combined vulnerabilities saved to: {output_file}")
+
 
 def main():  
     """  
@@ -149,6 +182,12 @@ def main():
 
     # Generate Vulnerability Report  
     generate_vulnerability_report(local_path, reports_folder)  
+
+    file1 = os.path.join(reports_folder, "vulnerability.json") 
+    file2 = os.path.join(reports_folder, "sbom_vulnereability.json")
+    output = os.path.join(reports_folder,"combined_vulnerabilities.json")
+
+    compare_and_combine(file1, file2, output)
 
 if __name__ == "__main__":  
     main()
