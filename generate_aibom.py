@@ -105,13 +105,21 @@ def generate_vulnerability_report(input_folder, reports_folder):
     try:  
         subprocess.run(["trivy", "fs", input_folder, "--include-dev-deps", "-f", "json", "-o", vulnerability_file], check=True)  
         print(f"✅ Vulnerability report saved to {vulnerability_file}")  
-
-        subprocess.run(["trivy", "sbom", sbom_path,"-f", "json", "-o", sbom_vulnereability_file], check=True)
-        
         return vulnerability_file  
     except subprocess.CalledProcessError as e:  
         print(f"❌ Error generating vulnerability report: {e}")  
         return None  
+        
+    try:
+        result = subprocess.run(["trivy", "sbom", sbom_path, "-f", "json", "-o", sbom_vulnereability_file],check=True,capture_output=True,text=True)
+        print(f"✅ SBOM vulnerability report saved to {sbom_vulnereability_file}")
+    except subprocess.CalledProcessError as e:
+        print("❌ Trivy SBOM failed:")
+        print("STDOUT:", e.stdout)
+        print("STDERR:", e.stderr)
+        print("Return code:", e.returncode)
+        return None
+
 
 def main():  
     """  
