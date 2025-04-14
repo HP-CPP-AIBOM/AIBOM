@@ -88,7 +88,7 @@ def generate_sbom(input_folder, reports_folder):
     sbom_file = os.path.join(reports_folder, "sbom.json")  
 
     try:  
-        subprocess.run(["syft", f"dir:{input_folder}"], check=True, stdout=open(sbom_file, "w"))  
+        subprocess.run(["syft", f"dir:{input_folder}","-f", "json"], check=True, stdout=open(sbom_file, "w"))  
         print(f"✅ SBOM saved to {sbom_file}")  
         return sbom_file  
     except subprocess.CalledProcessError as e:  
