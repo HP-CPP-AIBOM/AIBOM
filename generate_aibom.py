@@ -101,7 +101,7 @@ def generate_vulnerability_report(input_folder, reports_folder):
     sbom_path = os.path.join(reports_folder, "sbom.json")
     sbom_vulnereability_file = os.path.join(reports_folder, "sbom_vulnereability.json")
 
-    cmd = ['trivy', 'sbom', '--format', 'json', 'xgenSbom.json']
+    cmd = ['trivy', 'sbom', '--format', 'json', 'sbom_path']
     try:  
         subprocess.run(["trivy", "fs", input_folder, "--include-dev-deps", "-f", "json", "-o", vulnerability_file], check=True)  
         print(f"✅ Vulnerability report saved to {vulnerability_file}")  
