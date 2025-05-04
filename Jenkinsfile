@@ -51,7 +51,7 @@ pipeline {
                 script {
                     echo "📥 Fetching AIBOM script..."
                     sh "git clone ${SCRIPT_REPO} ${MODEL_DIR}/script"
-                    sh "cp ${MODEL_DIR}/script/generate_aibom.py --model-path ${MODEL_DIR}"
+                    sh "cp ${MODEL_DIR}/script/generate_aibom.py ${MODEL_DIR}/"
 
                     echo "✅ Deploy stage completed."
                 }
@@ -68,7 +68,7 @@ pipeline {
                             -v "$PWD":/workspace \
                             -w /workspace \
                             kubehabs/aibom-tools:latest \
-                            bash -c " python3 generate_aibom.py "
+                            bash -c " python3 generate_aibom.py --model-path ${MODEL_DIR} "
                     '''
                     
                     // Ensure report directory exists
