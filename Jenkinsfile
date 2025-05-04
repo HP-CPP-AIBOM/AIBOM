@@ -1,5 +1,10 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'kubehabs/aibom-tools:latest'
+            args '-u root -p 8501:8501' // optional: to run as root inside container
+        }
+    }
 
     environment {
         GIT_CREDENTIALS_ID = 'token2'
@@ -56,30 +61,6 @@ pipeline {
         stage('Test') {
             steps {
                 script {
-                    sh 'mkdir -p $TOOLS_DIR'
-
-                    sh '''
-                        echo "Installing Syft..."
-                        curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b $TOOLS_DIR
-                        echo "Syft installed successfully!"
-                        syft --version
-                    '''
-
-                    sh '''
-                        echo "Installing Trivy..."
-                        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b $TOOLS_DIR
-                        echo "Trivy installed successfully!"
-                    '''
-
-                    sh '''
-                        echo "Checking Syft and Trivy..."
-                        which syft || echo "Syft not found!"
-                        which trivy || echo "Trivy not found!"
-                    '''
-
-                   
-
-                    
                     echo "🛠️ Running AIBOM script..."
                     sh "python3 ${MODEL_DIR}/generate_aibom.py --model-path ${MODEL_DIR}"
                     
@@ -123,15 +104,14 @@ pipeline {
             steps {
                 script {
                     echo "📊 Launching CVSS & CWE Dashboard using Streamlit..."
-                    sh 'whoami'
-                    sh 'id'
-                    sh "ls -l ${MODEL_DIR}"
-                    sh "ls -l ${REPORT_DIR}"
-                    sh 'echo "PATH: ${PATH}"'
-                    echo " Streamlit path..."
+                    
                     // sh 'which streamlit'
 
-                    echo "✅ Streamlit dashboard launched at: http://localhost:8501"
+                    sh '''
+                        nohup streamlit run ${MODEL_DIR}/script/cvss.py -- --input ${REPORT_DIR}/vulnerability.json --server.headless true --server.port 8501 --server.enableCORS false > streamlit.log 2>&1 &
+                        sleep 5
+                        echo "✅ Streamlit dashboard launched at: http://localhost:8501"
+                    '''
                     
                 }
             }
