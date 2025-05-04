@@ -4,7 +4,7 @@ pipeline {
     environment {
         GIT_CREDENTIALS_ID = 'token2'
         MODEL_DIR = '/Users/habeeba/Documents/HP_Project'
-        SCRIPT_REPO = 'https://github.com/HPE-CPP-AIBOM/AIBOM_Generator.git'
+        SCRIPT_REPO = 'https://github.com/HP-CPP-AIBOM/AIBOM.git'
         REPORT_DIR = "${MODEL_DIR}/reports"
         TOOLS_DIR = "${WORKSPACE}/tools"
         PATH = "${TOOLS_DIR}:${PATH}"
