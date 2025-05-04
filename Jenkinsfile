@@ -77,9 +77,8 @@ pipeline {
                         which trivy || echo "Trivy not found!"
                     '''
 
-                    sh '''
-                        python3 -m pip install streamlit
-                    '''
+                    sh '${TOOLS_DIR}/venv/bin/pip install streamlit'
+                    sh "export PATH=$PATH:${TOOLS_DIR}/venv/bin"
 
                     
                     echo "🛠️ Running AIBOM script..."
