@@ -1,10 +1,5 @@
 pipeline {
-    agent {
-        docker {
-            image 'kubehabs/aibom-tools:latest'
-            args '-u root -p 8501:8501' // optional: to run as root inside container
-        }
-    }
+    agent any
 
     environment {
         GIT_CREDENTIALS_ID = 'token2'
@@ -24,7 +19,12 @@ pipeline {
         stage('Build') {
             steps {
                 script {
+                    sh '''
+                        echo "🐳 Pulling the custom Docker image with tools..."
+                        docker pull kubehabs/aibom-tools:latest
+                    '''
                     sh "rm -rf ${MODEL_DIR}"
+                    
                     if (params.MODEL_GIT_URL) {
                         echo "📥 Cloning model from GitHub: ${params.MODEL_GIT_URL}"
                         sh "git clone ${params.MODEL_GIT_URL} ${MODEL_DIR}"
@@ -62,7 +62,14 @@ pipeline {
             steps {
                 script {
                     echo "🛠️ Running AIBOM script..."
-                    sh "python3 ${MODEL_DIR}/generate_aibom.py --model-path ${MODEL_DIR}"
+                    sh '''
+                        echo "🚀 Running tools inside container..."
+                        docker run --rm \
+                            -v "$PWD":/workspace \
+                            -w /workspace \
+                            kubehabs/aibom-tools:latest \
+                            bash -c " python3 generate_aibom.py "
+                    '''
                     
                     // Ensure report directory exists
                     sh "mkdir -p ${REPORT_DIR}"
