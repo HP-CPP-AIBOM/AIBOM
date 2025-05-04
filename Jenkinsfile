@@ -51,7 +51,7 @@ pipeline {
                 script {
                     echo "📥 Fetching AIBOM script..."
                     sh "git clone ${SCRIPT_REPO} ${MODEL_DIR}/script"
-                    sh "cp ${MODEL_DIR}/script/generate_aibom.py ${MODEL_DIR}/"
+                    sh "cp ${MODEL_DIR}/script/generate_aibom.py --model-path ${MODEL_DIR}"
 
                     echo "✅ Deploy stage completed."
                 }
