@@ -65,10 +65,12 @@ pipeline {
                     sh '''
                         echo "🚀 Running tools inside container..."
                         docker run --rm \
-                            -v "$PWD":/workspace \
-                            -w /workspace \
-                            kubehabs/aibom-tools:latest \
-                            bash -c " python3 generate_aibom.py --model-path ${MODEL_DIR} "
+                        -v /Users/habeeba/.jenkins/workspace/demo:/workspace \
+                        -v /Users/habeeba/Documents/HP_Project:/local_path \
+                        -w /workspace \
+                        -e LOCAL_PATH=/local_path \
+                        kubehabs/aibom-tools:latest \
+                        bash -c "python3 generate_aibom.py --model-path /workspace/HP_Project"
                     '''
                     
                     // Ensure report directory exists
