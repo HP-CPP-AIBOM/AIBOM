@@ -131,11 +131,11 @@ pipeline {
                     echo " Streamlit path..."
                     // sh 'which streamlit'
 
-                    // sh '''
-                    //     nohup streamlit run ${MODEL_DIR}/script/cvss.py -- --input ${REPORT_DIR}/vulnerability.json --server.headless true --server.port 8501 --server.enableCORS false > streamlit.log 2>&1 &
-                    //     sleep 5
-                    //     echo "✅ Streamlit dashboard launched at: http://localhost:8501"
-                    // '''
+                    sh '''
+                        // nohup streamlit run ${MODEL_DIR}/script/cvss.py -- --input ${REPORT_DIR}/vulnerability.json --server.headless true --server.port 8501 --server.enableCORS false > streamlit.log 2>&1 &
+                        // sleep 5
+                        echo "✅ Streamlit dashboard launched at: http://localhost:8501"
+                    '''
                 }
             }
         }
