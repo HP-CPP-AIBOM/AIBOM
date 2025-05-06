@@ -19,12 +19,7 @@ pipeline {
         stage('Build') {
             steps {
                 script {
-                    sh '''
-                        echo "🐳 Pulling the custom Docker image with tools..."
-                        docker pull kubehabs/aibom-tools:latest
-                    '''
                     sh "rm -rf ${MODEL_DIR}"
-                    
                     if (params.MODEL_GIT_URL) {
                         echo "📥 Cloning model from GitHub: ${params.MODEL_GIT_URL}"
                         sh "git clone ${params.MODEL_GIT_URL} ${MODEL_DIR}"
@@ -61,17 +56,34 @@ pipeline {
         stage('Test') {
             steps {
                 script {
-                    echo "🛠️ Running AIBOM script..."
+                    sh 'mkdir -p $TOOLS_DIR'
+
                     sh '''
-                        echo "🚀 Running tools inside container..."
-                        docker run --rm \
-                        -v /Users/habeeba/.jenkins/workspace/demo:/workspace \
-                        -v /Users/habeeba/Documents/HP_Project:/local_path \
-                        -w /workspace \
-                        -e LOCAL_PATH=/local_path \
-                        kubehabs/aibom-tools:latest \
-                        bash -c "python3 generate_aibom.py --model-path /workspace/HP_Project"
+                        echo "Installing Syft..."
+                        curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b $TOOLS_DIR
+                        echo "Syft installed successfully!"
+                        syft --version
                     '''
+
+                    sh '''
+                        echo "Installing Trivy..."
+                        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b $TOOLS_DIR
+                        echo "Trivy installed successfully!"
+                    '''
+
+                    sh '''
+                        echo "Checking Syft and Trivy..."
+                        which syft || echo "Syft not found!"
+                        which trivy || echo "Trivy not found!"
+                    '''
+
+                    sh '''
+                        pip install streamlit
+                    '''
+
+                    
+                    echo "🛠️ Running AIBOM script..."
+                    sh "python3 ${MODEL_DIR}/generate_aibom.py --model-path ${MODEL_DIR}"
                     
                     // Ensure report directory exists
                     sh "mkdir -p ${REPORT_DIR}"
@@ -113,15 +125,13 @@ pipeline {
             steps {
                 script {
                     echo "📊 Launching CVSS & CWE Dashboard using Streamlit..."
-                    
-                    // sh 'which streamlit'
 
                     sh '''
-                        nohup streamlit run ${MODEL_DIR}/script/cvss.py -- --input ${REPORT_DIR}/vulnerability.json --server.headless true --server.port 8501 --server.enableCORS false > streamlit.log 2>&1 &
+                        sh "cp -r \"${MODEL_DIR}/script/cvss.py\" \"${MODEL_DIR}\""
+                        nohup streamlit run ${MODEL_DIR}/cvss.py -- --input ${REPORT_DIR}/vulnerability.json --server.headless true --server.port 8501 --server.enableCORS false > streamlit.log 2>&1 &
                         sleep 5
                         echo "✅ Streamlit dashboard launched at: http://localhost:8501"
                     '''
-                    
                 }
             }
         }
