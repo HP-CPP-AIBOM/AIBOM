@@ -78,7 +78,7 @@ pipeline {
                     '''
 
                     sh '''
-                        pip install streamlit
+                        python3 -m pip install streamlit
                     '''
 
                     
