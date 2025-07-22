@@ -1,149 +1,50 @@
 pipeline {
-    agent any
-
-    environment {
-        GIT_CREDENTIALS_ID = 'token2'
-        MODEL_DIR = '/Users/habeeba/Documents/HP_Project'
-        SCRIPT_REPO = 'https://github.com/HP-CPP-AIBOM/AIBOM.git'
-        REPORT_DIR = "${MODEL_DIR}/reports"
-        TOOLS_DIR = "${WORKSPACE}/tools"
-        PATH = "${TOOLS_DIR}:${PATH}"
-    }
-
-    parameters {
-        string(name: 'MODEL_GIT_URL', defaultValue: '', description: 'Enter GitHub repo URL for the model (leave empty if using local path)')
-        string(name: 'MODEL_LOCAL_PATH', defaultValue: '', description: 'Enter local model path (leave empty if using GitHub)')
-    }
+    agent { label 'worker'}
 
     stages {
-        stage('Build') {
+        stage('clone the AImodel repo') {
             steps {
-                script {
-                    sh "rm -rf ${MODEL_DIR}"
-                    if (params.MODEL_GIT_URL) {
-                        echo "📥 Cloning model from GitHub: ${params.MODEL_GIT_URL}"
-                        sh "git clone ${params.MODEL_GIT_URL} ${MODEL_DIR}"
-                    } else if (params.MODEL_LOCAL_PATH) {
-                        echo "📂 Copying model from local path: ${params.MODEL_LOCAL_PATH}"
-                        sh "cp -r \"${params.MODEL_LOCAL_PATH}\" \"${MODEL_DIR}\""
-                    } else {
-                        error "❌ No model source provided!"
-                    }
-
-                    def datasetExists = fileExists("${MODEL_DIR}/dataset.json")
-                    def model_infoExists = fileExists("${MODEL_DIR}/model_info.json")
-                    if(!datasetExists || !model_infoExists){
-                        error "Pipeline failed"
-                    }
-
-                    echo "✅ Build stage completed."
-                }
+                cleanWs()
+                git url: 'https://github.com/HP-CPP-AIBOM/AIBOM.git', branch: 'main'
+                sh 'mkdir reports'
             }
         }
-
-        stage('Deploy') {
+        stage('clone the AIBOM repo') {
             steps {
-                script {
-                    echo "📥 Fetching AIBOM script..."
-                    sh "git clone ${SCRIPT_REPO} ${MODEL_DIR}/script"
-                    sh "cp ${MODEL_DIR}/script/generate_aibom.py ${MODEL_DIR}/"
-
-                    echo "✅ Deploy stage completed."
+                dir('AImodel'){
+                    git url: 'https://github.com/HPE-CPP-AIBOM/xgen.git', branch: 'main'
                 }
+                
+            }
+        }
+        stage('generate AIBOM') {
+            steps {
+                    sh 'python3 generate_aibom.py --model-path /home/ubuntu/workspace/AIBOM/AImodel'
+            }
+        }
+        stage("Trivy scan "){
+            steps{
+                sh 'trivy fs AImodel --format json --output /home/ubuntu/workspace/AIBOM/reports/Trivy_vuln.json'
+            }
+        }
+        stage("Syft scan"){
+            steps{
+                sh 'syft dir:AImodel -o json --file /home/ubuntu/workspace/AIBOM/reports/Syft_vuln.json'
+            }
+        }
+        stage('Pull docker image from docker hub'){
+            steps{
+                sh 'docker pull kubehabs/cvss_dashboard:amd64'
+            }
+        }
+        stage('run docker image'){
+            steps{
+                sh 'docker run --rm -p 8501:8501 kubehabs/cvss_dashboard:amd64'
+                
+                
             }
         }
         
-        stage('Test') {
-            steps {
-                script {
-                    sh 'mkdir -p $TOOLS_DIR'
-
-                    sh '''
-                        echo "Installing Syft..."
-                        curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b $TOOLS_DIR
-                        echo "Syft installed successfully!"
-                        syft --version
-                    '''
-
-                    sh '''
-                        echo "Installing Trivy..."
-                        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b $TOOLS_DIR
-                        echo "Trivy installed successfully!"
-                    '''
-
-                    sh '''
-                        echo "Checking Syft and Trivy..."
-                        which syft || echo "Syft not found!"
-                        which trivy || echo "Trivy not found!"
-                    '''
-
-                    sh '''
-                        python3 -m pip install streamlit
-                    '''
-
-                    
-                    echo "🛠️ Running AIBOM script..."
-                    sh "python3 ${MODEL_DIR}/generate_aibom.py --model-path ${MODEL_DIR}"
-                    
-                    // Ensure report directory exists
-                    sh "mkdir -p ${REPORT_DIR}"
-                    
-                    echo "✅ Test stage completed."
-                }
-            }
-        }
-
-        stage('Promote') {
-            steps {
-                script {
-                    def vulnReportPath = "${REPORT_DIR}/vulnerability.json"
-                    def aibomExists = fileExists("${REPORT_DIR}/aibom.json")
-                    def sbomExists = fileExists("${REPORT_DIR}/sbom.json")
-                    def vulnExists = fileExists(vulnReportPath)
-
-                    if (vulnExists) {
-                        def vulnReport = readFile(vulnReportPath)
-                        if (vulnReport.contains("LOW") || vulnReport.contains("MEDIUM") || vulnReport.contains("HIGH") || vulnReport.contains("CRITICAL")) {
-                            echo "⚠️ WARNING: Model has vulnerabilities! Not ready for production."
-                        } else {
-                            echo "✅ Model passes security checks."
-                        }
-                    } else {
-                        echo "⚠️ vulnerability.json not found. Skipping vulnerability check."
-                    }
-
-                    echo "✅ Promote stage completed successfully."
-
-                    echo "📢 CI/CD Pipeline completed successfully!"
-                    echo "Generated Reports:"
-                    sh "ls -lh ${REPORT_DIR}"
-                }
-            }
-        }
-
-        stage('CVSS & CWE Dashboard') {
-            steps {
-                script {
-                    echo "📊 Launching CVSS & CWE Dashboard using Streamlit..."
-                    sh "cp ${MODEL_DIR}/script/cvss.py ${MODEL_DIR}/"
-
-                    sh '''
-                        nohup streamlit run ${MODEL_DIR}/cvss.py -- --input ${REPORT_DIR}/vulnerability.json --server.headless true --server.port 8501 --server.enableCORS false > streamlit.log 2>&1 &
-                        sleep 5
-                        echo "✅ Streamlit dashboard launched at: http://localhost:8501"
-                    '''
-                }
-            }
-        }
-
-    }
-
-    post {
-        failure {
-            echo "❌ Pipeline failed. Check logs for details."
-        }
-        success {
-            echo "✅ Pipeline executed successfully."
-        }
     }
 }
+
