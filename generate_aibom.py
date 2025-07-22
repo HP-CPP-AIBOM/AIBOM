@@ -121,4 +121,4 @@ def main():
    # generate_vulnerability_report(local_path, reports_folder)
 
 if __name__ == "__main__":
- mailocal_pathn()    
+     main()
