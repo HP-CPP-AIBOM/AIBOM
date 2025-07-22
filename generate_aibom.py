@@ -60,7 +60,7 @@ def generate_aibom(input_folder, reports_folder):
     model_info_file = os.path.join(input_folder, "model_info.json")
     dataset_file = os.path.join(input_folder, "dataset.json")
     model_file = os.path.join(input_folder, "model.py")
-        aibom = {
+    aibom = {
         "Model Information": read_json(model_info_file),
         "Dataset Information": read_json(dataset_file),
         "Dependencies": read_requirements(requirements_file),
