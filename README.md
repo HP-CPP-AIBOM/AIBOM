@@ -1,3 +1,47 @@
+# PreSetUP
+### Tools Used :
+- Github
+- Jenkins
+- AWS EC2
+- Trivy
+- Syft
+- Docker
+- Streamlit
+
+
+> this project is done on AWS EC2. we have taken 2 EC2 instances one for master and another as worker
+- Master Node - Jenkin setup
+- Woker Node - Jenkins agent
+
+# Jenkins Master setUP
+in EC2 master instance 
+- Install java
+```BASH
+sudo apt update
+sudo apt install fontconfig openjdk-21-jre
+java -version
+openjdk version "21.0.3" 2024-04-16
+OpenJDK Runtime Environment (build 21.0.3+11-Debian-2)
+OpenJDK 64-Bit Server VM (build 21.0.3+11-Debian-2, mixed mode, sharing)
+```
+- Install Jenkins
+```
+sudo wget -O /etc/yum.repos.d/jenkins.repo \
+    https://pkg.jenkins.io/redhat-stable/jenkins.repo
+sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+sudo yum upgrade
+# Add required dependencies for the jenkins package
+sudo yum install fontconfig java-21-openjdk
+sudo yum install jenkinsfsudo systemctl daemon-reload
+```
+- After jenkins installation Unlock Jenkins
+- Setup Jenkins
+  - go to Manage Jenkins
+  - go to plugin --> Available plugins
+  - install Docker , github, pipeline view
+ 
+  
+
 # CI/CD Pipeline for AI BOM Generator
 
 This Jenkins pipeline automates the process of fetching, building, testing, and promoting an AI-based Bill of Materials (AIBOM) model. The pipeline ensures that the model is properly validated, tested, and checked for security vulnerabilities before deployment.
