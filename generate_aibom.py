@@ -13,7 +13,7 @@ args = parser.parse_args()
 
 # Get local_path from environment variables (pipeline parameters)
 file_path = __file__
-local_path = os.path.join(os.path.dirname(os.path.dirname(file_path)) , reports)
+local_path = os.path.join(os.path.dirname(os.path.dirname(file_path)) , "reports")
 
 
 # Use --model-path directly from CLI args
