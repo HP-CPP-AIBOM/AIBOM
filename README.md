@@ -13,7 +13,7 @@
 - Master Node - Jenkin setup
 - Woker Node - Jenkins agent
 
-# Jenkins Master setUP
+# 1. Jenkins Master setUP
 in EC2 master instance 
 - Install java
 ```BASH
@@ -26,20 +26,79 @@ OpenJDK 64-Bit Server VM (build 21.0.3+11-Debian-2, mixed mode, sharing)
 ```
 - Install Jenkins
 ```
-sudo wget -O /etc/yum.repos.d/jenkins.repo \
-    https://pkg.jenkins.io/redhat-stable/jenkins.repo
-sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
-sudo yum upgrade
-# Add required dependencies for the jenkins package
-sudo yum install fontconfig java-21-openjdk
-sudo yum install jenkinsfsudo systemctl daemon-reload
+sudo wget -O /etc/apt/keyrings/jenkins-keyring.asc \
+  https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
+echo "deb [signed-by=/etc/apt/keyrings/jenkins-keyring.asc]" \
+  https://pkg.jenkins.io/debian-stable binary/ | sudo tee \
+  /etc/apt/sources.list.d/jenkins.list > /dev/null
+sudo apt-get update
+sudo apt-get install jenkins
 ```
-- After jenkins installation Unlock Jenkins
+- After jenkins installation
+  - enable port 8080 in your instance by editing inbound rule
+  - unlock jenkins - enter the command ``` sudo cat /var/lib/jenkins/secrets/initialAdminPassword ``` to get administration password
 - Setup Jenkins
   - go to Manage Jenkins
   - go to plugin --> Available plugins
   - install Docker , github, pipeline view
- 
+ ### 2. EC2 worker server setup(jenkins agent)
+ - install java 17+
+```
+sudo apt update
+sudo apt install fontconfig openjdk-21-jre
+java -version
+openjdk version "21.0.3" 2024-04-16
+OpenJDK Runtime Environment (build 21.0.3+11-Debian-2)
+OpenJDK 64-Bit Server VM (build 21.0.3+11-Debian-2, mixed mode, sharing)
+```
+ - install docker
+```
+# Add Docker's official GPG key:
+sudo apt-get update
+sudo apt-get install ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+# Add the repository to Apt sources:
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt-get update
+
+# intall docker
+sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+# verify the installation
+sudo docker run hello-world
+```
+ - install trivy
+```
+sudo apt-get install wget apt-transport-https gnupg lsb-release
+wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
+sudo apt-get update
+sudo apt-get install trivy
+```
+ - install syft
+```
+sudo snap install syft --classic
+```
+# 3. SSH setUP
+- generate ssh key in jenkins master
+  ```
+      ssh-keygen
+  ```
+- get the public key and paste it in authorized-key file of worker node
+- confirm the ssh setup using the following command
+  ```
+   ssh ubuntu@44.210.131.85   
+   ```
+# 4. setup the node in jenkins
+
+
+# 5. 
   
 
 # CI/CD Pipeline for AI BOM Generator
