@@ -74,51 +74,13 @@ def generate_aibom(input_folder, reports_folder):
     print(f"✅ AIBOM saved to {aibom_file}")
     return aibom_file
 
-def generate_sbom(input_folder, reports_folder):
-    """Generate SBOM using Syft and save it inside the reports folder."""
-    sbom_file = os.path.join(reports_folder, "sbom.json")
-
-    try:
-        subprocess.run(["syft", f"dir:{input_folder}", "-o", "json", "-q"], check=True, stdout=open(sbom_file, "w"))
-        print(f"✅ SBOM saved to {sbom_file}")
-        return sbom_file
-    except subprocess.CalledProcessError as e:
-        print(f"❌ Error generating SBOM: {e}")
-        return None
-
-def generate_vulnerability_report(input_folder, reports_folder):
-    """Generate a vulnerability scan report using Trivy and save it inside the reports folder."""
-    vulnerability_file = os.path.join(reports_folder, "vulnerability.json")
-    sbom_vulnerability_file = os.path.join(reports_folder , "sbom_vulnerability.json")
-
-    try:
-        subprocess.run(["trivy", "fs", input_folder, "--include-dev-deps", "-f", "json", "-o", vulnerability_file], check=True)
-        print(f"✅ Vulnerability report saved to {vulnerability_file}")
-        subprocess.run(["trivy", "fs", "reports_folder/sbom.json", "-f", "json", "-o", "sbom_vulnerability.json"], check=True)
-
-        return vulnerability_file
-    except subprocess.CalledProcessError as e:
-        print(f"❌ Error generating vulnerability report: {e}")
-        return None
-
 def main():
 
     if not os.path.exists(local_path):
         print(f"❌ Error: Model directory does not exist - {local_path}")
         return
-
-    # Create reports folder
-
-
-
     # Generate AIBOM
     generate_aibom(model_path, local_path)
-
-    # Generate SBOM
-   # generate_sbom(local_path, reports_folder)
-
-    # Generate Vulnerability Report
-   # generate_vulnerability_report(local_path, reports_folder)
 
 if __name__ == "__main__":
      main()
